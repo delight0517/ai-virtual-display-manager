@@ -4,12 +4,11 @@ AI Virtual Display Manager (VDM) is a Windows utility for inspecting display sta
 
 ## Current project status
 
-This repository is publicly available under the MIT License at https://github.com/delight0517/ai-virtual-display-manager. It is **pre-release software, not a stable release**. The current source has passed 559 tests, a bundled hidden self-check, and the latest GitHub Actions build. The new Router private-QA target has not been installed or run in a live isolated session. Hardware and driver combinations beyond the development machine have not been verified. No stable binary release or broad compatibility guarantee is provided.
+This repository is publicly available under the MIT License at https://github.com/delight0517/ai-virtual-display-manager. It is **pre-release software, not a stable release**. Candidate 0.1.102 has 561 local tests and a bundled hidden self-check; hosted CI and live isolated-manager QA for this candidate are pending. The installed manager's output-pool identity remains unverified, and hardware and driver combinations beyond the development machine have not been verified. No stable binary release or broad compatibility guarantee is provided.
 
-The build candidate is VDM 0.1.101 with `manager_cli` 0.1.21. This project currently targets Windows only. Review [COMPATIBILITY.md](COMPATIBILITY.md) for the exact tested environment and known gaps. Third-party component terms for redistributed build outputs are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). VDM is released under the MIT License. See [LICENSE](LICENSE). Bundled third-party components retain their own terms, listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The build candidate is VDM 0.1.102 with `manager_cli` 0.1.21. This project currently targets Windows only. Review [COMPATIBILITY.md](COMPATIBILITY.md) for the exact tested environment and known gaps. Third-party component terms for redistributed build outputs are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). VDM is released under the MIT License. See [LICENSE](LICENSE). Bundled third-party components retain their own terms, listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 VDM's task runner currently uses a fixed target allowlist. It is not a generic launcher for arbitrary AI applications. A virtual monitor is a presentation surface, not a security boundary or a second operating-system session. The driver must be installed separately by the user from its upstream source and Windows/UAC prompts remain user controlled.
-
 ## Continuous integration
 
 A Windows GitHub Actions workflow runs the unit suite and builds both the app and operator CLI on pushes and pull requests. The latest main-branch run passed; see [GitHub Actions](https://github.com/delight0517/ai-virtual-display-manager/actions).
@@ -42,9 +41,3 @@ The application and `vdmctl` are built separately. See [BUILDING.md](BUILDING.md
 ## License
 
 VDM source is licensed under the MIT License; see [LICENSE](LICENSE). Third-party components retain their own licenses and notices.
-
-
-
-
-
-

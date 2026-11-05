@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "appId": "ai-virtual-display-manager",
-  "appVersion": "0.1.101",
+  "appVersion": "0.1.102",
   "apiVersion": 1,
   "modules": [
     {
@@ -70,7 +70,7 @@
     {
       "id": "virtual_output_pool",
       "path": "modules/virtual_output_pool/module.py",
-      "version": "0.1.14",
+      "version": "0.1.15",
       "apiVersion": 1,
       "owner": "Demand-based output pool; zero-baseline sessions, bounded stable endpoint discovery, persisted failure reason codes, and verified cleanup of owned outputs"
     },

@@ -17,7 +17,7 @@ from modules.task_display_lease.authority import MAX_TTL_SECONDS as TASK_LEASE_T
 
 API_VERSION = 1
 MODULE_ID = "virtual_output_pool"
-VERSION = "0.1.14"
+VERSION = "0.1.15"
 # Keep output cleanup close to the last active task/window. The manager polls
 # pool state every 15 seconds, so this is a short handoff grace, not a timer.
 IDLE_SECONDS = 5
@@ -718,6 +718,52 @@ class OutputPoolModule:
         except (KeyError, TypeError, ValueError, OutputPoolError):
             return False
 
+    def _recover_active_identity_session(self, current_count, current_modes, now):
+        """Rebind only an entire active pool whose stable endpoint identities are unchanged."""
+        session = self._session
+        expected = session.get("expected_endpoint_keys") if isinstance(session, dict) else None
+        if (not isinstance(session, dict) or session.get("phase") != "active"
+                or current_count != session.get("output_count")
+                or not isinstance(expected, list) or len(expected) != current_count
+                or len(set(expected)) != len(expected)
+                or not isinstance(current_modes, dict) or len(current_modes) != current_count):
+            return False
+        try:
+            if set(expected) == set(current_modes):
+                return False
+            requested_mode = tuple(PROFILES[session["profile"]])
+            # Require every old endpoint (baseline and manager-added) to map to
+            # exactly one current endpoint by stable device ID and full monitor path.
+            rebound_expected = rebind_renumbered_endpoints(
+                {key: [] for key in expected}, current_modes)
+            observed = {}
+            for key, mode in current_modes.items():
+                parse_mode_identity_key(key)
+                if (not isinstance(mode, (list, tuple)) or len(mode) != 3
+                        or any(isinstance(value, bool) or not isinstance(value, int) or value <= 0
+                               for value in mode)):
+                    return False
+                observed[key] = tuple(mode)
+            if set(rebound_expected) != set(observed):
+                return False
+            if any(mode != requested_mode for mode in observed.values()):
+                return False
+            rebound_baseline = rebind_renumbered_endpoints(session["previous_modes"], current_modes)
+            if (not set(rebound_baseline).issubset(observed)
+                    or len(observed) - len(rebound_baseline)
+                    != session["output_count"] - session["previous_count"]):
+                return False
+            previous = json.loads(json.dumps(session))
+            session["previous_modes"] = rebound_baseline
+            session["expected_endpoint_keys"] = sorted(observed)
+            session["last_activity"] = now
+            if self._save_journal():
+                return True
+            self._session = previous
+            return False
+        except (KeyError, TypeError, ValueError, OutputPoolError):
+            return False
+
     @_serialized
     def task_lease_policy(self, current_modes, requested_output_count, profile):
         """Validate the exact manager-confirmed pool before a target session may lease it.
@@ -796,6 +842,7 @@ class OutputPoolModule:
         baseline_modes = {key: tuple(value) for key, value in session["previous_modes"].items()}
         observed_modes = {key: tuple(value) for key, value in current_modes.items()}
         self._recover_pending_identity_session(current_count, current_modes, now)
+        self._recover_active_identity_session(current_count, current_modes, now)
         session = self._session
         baseline_modes = {key: tuple(value) for key, value in session["previous_modes"].items()}
         observed_modes = {key: tuple(value) for key, value in current_modes.items()}

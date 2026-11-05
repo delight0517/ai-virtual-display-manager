@@ -307,6 +307,78 @@ class VirtualOutputPoolTests(unittest.TestCase):
         self.assertEqual(lease["endpoint_keys"], added)
         self.assertEqual(self.backend.writes, [])
 
+    def test_active_identity_session_recovers_only_exact_unique_renumbered_endpoints(self):
+        old_baseline = mode_identity_key("DISPLAY32", "MONITOR1", "UID256")
+        new_baseline = mode_identity_key("DISPLAY10", "MONITOR1", "UID256")
+        old_added = [mode_identity_key("DISPLAY37", "MONITOR6", "UID257"),
+                     mode_identity_key("DISPLAY38", "MONITOR7", "UID258")]
+        new_added = [mode_identity_key("DISPLAY11", "MONITOR6", "UID257"),
+                     mode_identity_key("DISPLAY12", "MONITOR7", "UID258")]
+        self.backend.count = 3
+        self.backend.modes = {new_baseline: (2560, 1440, 60),
+                              new_added[0]: (2560, 1440, 60),
+                              new_added[1]: (2560, 1440, 60)}
+        store = FakeStore()
+        store.data = {"schema_version": 1, "saved_at_epoch": 1000.0, "session": {
+            "previous_count": 1, "output_count": 3, "profile": "high",
+            "previous_modes": {old_baseline: [1920, 1080, 60]},
+            "phase": "active", "error": None,
+            "expected_endpoint_keys": [old_baseline, *old_added],
+            "started_age_seconds": 0.0, "last_activity_age_seconds": 0.0,
+            "lease_ages_seconds": {},
+        }}
+        self.pool.configure_persistence(store)
+
+        result = self.pool.reconcile(now=self.now)
+
+        session = self.pool.snapshot()["session"]
+        self.assertEqual(session["phase"], "active")
+        self.assertEqual(session["previous_modes"], {new_baseline: [1920, 1080, 60]})
+        self.assertEqual(set(session["expected_endpoint_keys"]), set(self.backend.modes))
+        self.assertEqual(result["state"], "idle_countdown")
+        self.assertEqual(self.backend.writes, [])
+
+    def test_active_identity_session_rejects_ambiguous_or_changed_endpoints_without_writes(self):
+        old_baseline = mode_identity_key("DISPLAY32", "MONITOR1", "UID256")
+        old_added = [mode_identity_key("DISPLAY37", "MONITOR6", "UID257"),
+                     mode_identity_key("DISPLAY38", "MONITOR7", "UID258")]
+        variants = (
+            {mode_identity_key("DISPLAY10", "MONITOR_OTHER", "UID256"): (2560, 1440, 60),
+             mode_identity_key("DISPLAY11", "MONITOR6", "UID257"): (2560, 1440, 60),
+             mode_identity_key("DISPLAY12", "MONITOR7", "UID258"): (2560, 1440, 60)},
+            {mode_identity_key("DISPLAY10", "MONITOR1", "UID256"): (2560, 1440, 60),
+             mode_identity_key("DISPLAY11", "MONITOR6", "UID257"): (1920, 1080, 60),
+             mode_identity_key("DISPLAY12", "MONITOR7", "UID258"): (2560, 1440, 60)},
+            {mode_identity_key("DISPLAY10", "MONITOR1", "UID256"): (2560, 1440, 60),
+             mode_identity_key("DISPLAY11", "MONITOR6", "UID257"): (2560, 1440, 60)},
+        )
+        for current_modes in variants:
+            with self.subTest(current_modes=current_modes):
+                store = FakeStore()
+                store.data = {"schema_version": 1, "saved_at_epoch": 1000.0, "session": {
+                    "previous_count": 1, "output_count": 3, "profile": "high",
+                    "previous_modes": {old_baseline: [1920, 1080, 60]},
+                    "phase": "active", "error": None,
+                    "expected_endpoint_keys": [old_baseline, *old_added],
+                    "started_age_seconds": 0.0, "last_activity_age_seconds": 0.0,
+                    "lease_ages_seconds": {},
+                }}
+                self.backend.count = len(current_modes)
+                self.backend.modes = dict(current_modes)
+                pool = OutputPoolModule(clock=lambda: self.now, require_empty_baseline=False)
+                pool.configure_backend(count_reader=self.backend.read_count,
+                                       count_writer=self.backend.write_count,
+                                       mode_reader=self.backend.read_modes,
+                                       mode_writer=self.backend.write_mode,
+                                       mode_restorer=self.backend.restore_modes,
+                                       output_window_count=self.backend.window_count)
+                pool.configure_persistence(store)
+                result = pool.reconcile(now=self.now)
+                self.assertEqual(result["state"], "active_unverified")
+                self.assertEqual(pool.snapshot()["session"]["expected_endpoint_keys"],
+                                 [old_baseline, *old_added])
+                self.assertEqual(self.backend.writes, [])
+
     def test_pending_identity_session_rejects_wrong_mode_or_replaced_baseline(self):
         old_baseline = mode_identity_key("DISPLAY32", "MONITOR1", "UID256")
         replacement = mode_identity_key("DISPLAY33", "MONITOR_OTHER", "UID256")
@@ -610,7 +682,7 @@ class VirtualOutputPoolTests(unittest.TestCase):
         result = pool.refresh()
         self.assertEqual(result["state"], "off")
         self.assertEqual(result["module_id"], "virtual_output_pool")
-        self.assertEqual(result["module_version"], "0.1.14")
+        self.assertEqual(result["module_version"], "0.1.15")
         self.assertEqual(result["max_outputs"], 8)
         self.assertEqual(result["profiles"]["high"], [2560, 1440, 60])
         self.assertFalse(result["backend_configured"])
@@ -1136,5 +1208,4 @@ class OutputPoolUiCopyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
-
 
