@@ -371,7 +371,7 @@ class ManagerApp:
             pool_begin=self._pool_begin_with_physical_guard,
             pool_stop=self._return_output_pool,
             task_action=self._task_runtime_action,
-            window_reader=lambda: self.host.invoke("app_window_router", "list_windows"),
+            window_reader=self._manager_cli_window_snapshot,
             ui_action=self._background_ui.request,
             stardesk_reader=lambda: self.host.invoke("stardesk_management", "status"),
         )
@@ -721,6 +721,11 @@ class ManagerApp:
             status["physical_guard"] = {"state": "unavailable",
                                          "error_code": _manager_status_error_code(exc)}
         return status
+
+    def _manager_cli_window_snapshot(self):
+        """Read bounded, content-free window metadata for the operator CLI."""
+        return self.host.invoke("app_window_router", "list_windows",
+                                wait_timeout=MANAGER_STATUS_WAIT_SECONDS)
 
     def _pool_tick(self):
         if self._closing or self._shutdown_in_progress:

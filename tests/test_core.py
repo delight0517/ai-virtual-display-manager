@@ -236,6 +236,22 @@ class ModuleHostTests(unittest.TestCase):
         self.assertEqual(len(manager.host.waits), 8)
         self.assertTrue(all(0 <= value <= 1.5 for value in manager.host.waits))
 
+    def test_manager_cli_window_reader_uses_bounded_wait(self):
+        class FakeHost:
+            def __init__(self):
+                self.calls = []
+
+            def invoke(self, module_id, action, payload=None, *, wait_timeout=0):
+                self.calls.append((module_id, action, payload, wait_timeout))
+                return {"state": "verified", "windows": [], "virtual_outputs": []}
+
+        manager = ManagerApp.__new__(ManagerApp)
+        manager.host = FakeHost()
+        result = manager._manager_cli_window_snapshot()
+        self.assertEqual(result["state"], "verified")
+        self.assertEqual(manager.host.calls, [
+            ("app_window_router", "list_windows", None, 1.5)])
+
     def test_module_reload_is_blocked_during_exported_action(self):
         self.host._loaded["test_actions"] = SimpleNamespace(
             module=SimpleNamespace(ACTIONS=("reload",), __name__="test_actions"),

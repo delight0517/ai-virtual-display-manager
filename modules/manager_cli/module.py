@@ -24,7 +24,7 @@ from core.runtime_packet import MAX_PACKET_BYTES
 
 API_VERSION = 1
 MODULE_ID = "manager_cli"
-VERSION = "0.1.19"
+VERSION = "0.1.20"
 SAFE_RUNTIME_ERROR_CODES = frozenset({"PHYSICAL_PRIMARY_UNVERIFIED"})
 ACTIONS = ("status",)
 PIPE_PATH = r"\\.\pipe\AIVDM_ManagerControl.v1"
@@ -762,7 +762,10 @@ class ManagerCliModule:
             try:
                 result = self._window_reader()
             except Exception as exc:
-                return {"state": "unavailable", "error_code": type(exc).__name__,
+                error_code = ("MANAGER_BUSY" if isinstance(exc, RuntimeError)
+                              and str(exc) == "Another manager operation is already active"
+                              else type(exc).__name__)
+                return {"state": "unavailable", "error_code": error_code,
                         "windows": [], "virtual_outputs": []}
             if not isinstance(result, dict) or not isinstance(result.get("windows"), list):
                 return {"state": "unavailable", "error_code": "WINDOW_RESPONSE_INVALID",

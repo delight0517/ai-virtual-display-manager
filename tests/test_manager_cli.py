@@ -253,6 +253,22 @@ class ManagerCliTests(unittest.TestCase):
         self.assertTrue(data["movement_requires_confirmation"])
         self.assertFalse(data["pixels_captured"])
 
+    def test_windows_busy_reader_returns_stable_code_without_exception_text(self):
+        self.module._window_reader = lambda: (_ for _ in ()).throw(
+            RuntimeError("Another manager operation is already active"))
+        result = self.module._handle_request(self._request("windows", {}))
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["data"]["state"], "unavailable")
+        self.assertEqual(result["data"]["error_code"], "MANAGER_BUSY")
+        self.assertNotIn("Another manager operation", json.dumps(result))
+
+    def test_windows_unknown_errors_keep_type_only_error_code(self):
+        self.module._window_reader = lambda: (_ for _ in ()).throw(
+            RuntimeError("private detail must not cross the pipe"))
+        result = self.module._handle_request(self._request("windows", {}))
+        self.assertEqual(result["data"]["error_code"], "RuntimeError")
+        self.assertNotIn("private detail", json.dumps(result))
+
     def test_malformed_stale_unknown_and_replayed_requests_fail_closed(self):
         malformed = self._request("status", {})
         malformed["extra"] = True
