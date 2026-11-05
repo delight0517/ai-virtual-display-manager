@@ -4,7 +4,7 @@ AI Virtual Display Manager (VDM) is a Windows utility for inspecting display sta
 
 ## Current project status
 
-This repository is a public, pre-release source candidate at https://github.com/delight0517/ai-virtual-display-manager. It is **not a stable release**: the most recent code has passed 559 source tests and a bundled hidden self-check, but the new Router private-QA target has not been installed or run in a live isolated session. The installed runtime is older than this candidate. Hardware and driver combinations beyond the development machine have not been verified.
+This repository is publicly available under the MIT License at https://github.com/delight0517/ai-virtual-display-manager. It is **pre-release software, not a stable release**. The current source has passed 559 tests, a bundled hidden self-check, and the latest GitHub Actions build. The new Router private-QA target has not been installed or run in a live isolated session. Hardware and driver combinations beyond the development machine have not been verified. No stable binary release or broad compatibility guarantee is provided.
 
 The build candidate is VDM 0.1.101 with `manager_cli` 0.1.21. This project currently targets Windows only. Review [COMPATIBILITY.md](COMPATIBILITY.md) for the exact tested environment and known gaps. Third-party component terms for redistributed build outputs are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). VDM is released under the MIT License. See [LICENSE](LICENSE). Bundled third-party components retain their own terms, listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
@@ -12,7 +12,7 @@ VDM's task runner currently uses a fixed target allowlist. It is not a generic l
 
 ## Continuous integration
 
-A Windows GitHub Actions workflow is configured to run the unit suite and build both the app and operator CLI on pushes and pull requests. It has not run on GitHub because this candidate has not been published to a repository.
+A Windows GitHub Actions workflow runs the unit suite and builds both the app and operator CLI on pushes and pull requests. The latest main-branch run passed; see [GitHub Actions](https://github.com/delight0517/ai-virtual-display-manager/actions).
 
 ## Build from source
 
