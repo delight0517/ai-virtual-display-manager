@@ -7,7 +7,7 @@ This document describes observed verification, not a promise that every PC or AI
 - Windows 11, build 26300
 - Python 3.13.13, run from a Windows virtual environment
 - PyInstaller 6.22.3
-- The public-candidate Windows CI uses the complete dependency set recorded in `requirements-build-lock.txt`; CI for candidate 0.1.102 is pending.
+- The public-candidate Windows CI uses the complete dependency set recorded in `requirements-build-lock.txt`; [candidate 0.1.102 commit `2c7cfbd` passed Windows CI](https://github.com/delight0517/ai-virtual-display-manager/actions/runs/42055508631).
 - VDM source candidate 0.1.102; `manager_cli` 0.1.21
 - Source suite: 561 tests passed
 - Windows app and CLI: built from this staged source tree; hidden app self-check and CLI help returned exit code 0
