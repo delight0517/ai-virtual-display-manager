@@ -8,8 +8,8 @@ This document describes observed verification, not a promise that every PC or AI
 - Python 3.13.13, run from a Windows virtual environment
 - PyInstaller 6.22.3
 - The public-candidate Windows CI uses the complete dependency set recorded in `requirements-build-lock.txt`.
-- VDM source candidate 0.1.98; `manager_cli` 0.1.19
-- Source suite: 551 tests passed
+- VDM source candidate 0.1.99; `manager_cli` 0.1.19
+- Source suite: 554 tests passed
 - Windows app and CLI: built from this staged source tree; hidden app self-check and CLI help returned exit code 0
 - The self-check read host display metadata. It did not start an AI target, capture pixels, or change display topology.
 

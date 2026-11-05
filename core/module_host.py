@@ -128,12 +128,18 @@ class ModuleHost:
                 raise RuntimeError("Another manager operation is already active")
             return self._loaded[module_id].instance.snapshot()
 
-    def refresh(self, module_id: str):
-        with self._lock:
+    def refresh(self, module_id: str, *, wait_timeout: float = 0):
+        if (isinstance(wait_timeout, bool) or not isinstance(wait_timeout, (int, float))
+                or not 0 <= wait_timeout <= 30 or not math.isfinite(wait_timeout)):
+            raise ValueError("wait_timeout must be a finite number from 0 to 30 seconds")
+        with self._operation_changed:
             # Pool actions call their injected topology readers synchronously.
-            # Preserve that existing same-thread nesting, never admit another
-            # thread while an operation owns the module instances.
-            if self.active_operations and self._operation_thread_id != threading.get_ident():
+            # Preserve same-thread nesting. Other callers may wait briefly for
+            # the manager-owned operation to release its module instances.
+            if (self.active_operations
+                    and self._operation_thread_id != threading.get_ident()
+                    and (wait_timeout == 0 or not self._operation_changed.wait_for(
+                        lambda: self.active_operations == 0, timeout=wait_timeout))):
                 raise RuntimeError("Another manager operation is already active")
             instance = self._loaded[module_id].instance
             self.active_operations += 1

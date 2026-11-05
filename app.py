@@ -33,6 +33,16 @@ from modules.virtual_output_pool.module import IDLE_SECONDS, PROFILES, mode_iden
 from modules.virtual_output_pool.state_store import VirtualOutputStateStore
 
 
+MANAGER_STATUS_WAIT_SECONDS = 1.5
+
+
+def _manager_status_error_code(exc):
+    if (isinstance(exc, RuntimeError)
+            and str(exc) == "Another manager operation is already active"):
+        return "MANAGER_OPERATION_ACTIVE"
+    return type(exc).__name__
+
+
 def manager_window_geometry(screen_width: int, screen_height: int) -> tuple[int, int, int, int]:
     """Fit the manager shell inside the current display while preserving usable size."""
     width = min(980, max(600, int(screen_width) - 32))
@@ -670,6 +680,18 @@ class ManagerApp:
 
     def _manager_cli_status(self):
         """Read-only status snapshot for the authenticated local operator CLI."""
+        deadline = time.monotonic() + MANAGER_STATUS_WAIT_SECONDS
+
+        def remaining_wait():
+            return max(0.0, deadline - time.monotonic())
+
+        def refresh(module_id):
+            return self.host.refresh(module_id, wait_timeout=remaining_wait())
+
+        def invoke(module_id, action, payload=None):
+            return self.host.invoke(module_id, action, payload,
+                                    wait_timeout=remaining_wait())
+
         modules = {}
         for module_id in sorted(self.host._loaded):
             try:
@@ -679,23 +701,25 @@ class ManagerApp:
         status = {"app_version": APP_VERSION, "pid": os.getpid(), "modules": modules,
                   "ui": self._background_ui.request("status")}
         readers = {
-            "driver": lambda: self.host.refresh("mtt_vdd"),
-            "topology": lambda: self.host.refresh("display_topology"),
-            "pool": lambda: self.host.invoke("virtual_output_pool", "pool_status"),
-            "task_runtime": lambda: self.host.refresh("task_session_runtime"),
-            "task_broker": lambda: self.host.refresh("only_chat_task_runtime"),
-            "output_lease": lambda: self.host.refresh("only_chat_output_lease"),
-            "manager_cli": lambda: self.host.refresh("manager_cli"),
+            "driver": lambda: refresh("mtt_vdd"),
+            "topology": lambda: refresh("display_topology"),
+            "pool": lambda: invoke("virtual_output_pool", "pool_status"),
+            "task_runtime": lambda: refresh("task_session_runtime"),
+            "task_broker": lambda: refresh("only_chat_task_runtime"),
+            "output_lease": lambda: refresh("only_chat_output_lease"),
+            "manager_cli": lambda: refresh("manager_cli"),
         }
         for key, reader in readers.items():
             try:
                 status[key] = reader()
             except Exception as exc:
-                status[key] = {"state": "unavailable", "error_code": type(exc).__name__}
+                status[key] = {"state": "unavailable",
+                               "error_code": _manager_status_error_code(exc)}
         try:
-            status["physical_guard"] = self.host.invoke("app_window_router", "physical_guard_status")
+            status["physical_guard"] = invoke("app_window_router", "physical_guard_status")
         except Exception as exc:
-            status["physical_guard"] = {"state": "unavailable", "error_code": type(exc).__name__}
+            status["physical_guard"] = {"state": "unavailable",
+                                         "error_code": _manager_status_error_code(exc)}
         return status
 
     def _pool_tick(self):

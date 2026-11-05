@@ -14,7 +14,7 @@ from core.module_host import ModuleHost
 from core.paths import APP_VERSION
 from core.vdd_pipe import validate_command
 from modules.mtt_vdd.module import MttVddModule
-from app import manager_window_geometry
+from app import ManagerApp, _manager_status_error_code, manager_window_geometry
 
 
 class PipeCommandTests(unittest.TestCase):
@@ -151,7 +151,6 @@ class ModuleHostTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not exported"):
             self.host.invoke("mtt_vdd", "enable")
         self.assertEqual(self.host.active_operations, 0)
-
         self.host._loaded["test_actions"] = SimpleNamespace(
             module=SimpleNamespace(ACTIONS=("echo",), __name__="test_actions"),
             instance=SimpleNamespace(action=lambda name, payload: (name, payload),
@@ -160,6 +159,82 @@ class ModuleHostTests(unittest.TestCase):
         self.assertEqual(self.host.invoke("test_actions", "echo", {"id": "qa"}),
                          ("echo", {"id": "qa"}))
         self.assertEqual(self.host.active_operations, 0)
+
+    def test_refresh_waits_boundedly_for_an_active_manager_operation(self):
+        from threading import Event, Thread
+
+        started = Event()
+        release = Event()
+        result = []
+
+        def hold_operation(_name, _payload):
+            started.set()
+            release.wait(2)
+            return "finished"
+
+        self.host._loaded["test_actions"] = SimpleNamespace(
+            module=SimpleNamespace(ACTIONS=("hold",), __name__="test_actions"),
+            instance=SimpleNamespace(action=hold_operation, dispose=lambda: None),
+        )
+        worker = Thread(target=lambda: result.append(
+            self.host.invoke("test_actions", "hold")))
+        worker.start()
+        self.assertTrue(started.wait(1))
+        try:
+            with self.assertRaisesRegex(RuntimeError, "Another manager operation"):
+                self.host.refresh("mtt_vdd")
+
+            def release_after_delay():
+                import time
+                time.sleep(0.05)
+                release.set()
+
+            refresher = Thread(target=release_after_delay)
+            refresher.start()
+            state = self.host.refresh("mtt_vdd", wait_timeout=1)
+            refresher.join(1)
+            self.assertIsInstance(state, dict)
+        finally:
+            release.set()
+            worker.join(1)
+        self.assertEqual(result, ["finished"])
+        self.assertEqual(self.host.active_operations, 0)
+
+    def test_manager_status_busy_errors_use_a_stable_code(self):
+        self.assertEqual(_manager_status_error_code(
+            RuntimeError("Another manager operation is already active")),
+            "MANAGER_OPERATION_ACTIVE")
+        self.assertEqual(_manager_status_error_code(RuntimeError("other")), "RuntimeError")
+
+    def test_manager_cli_status_uses_one_bounded_wait_budget(self):
+        class FakeHost:
+            _loaded = {name: object() for name in (
+                "mtt_vdd", "display_topology", "virtual_output_pool",
+                "task_session_runtime", "only_chat_task_runtime",
+                "only_chat_output_lease", "manager_cli", "app_window_router")}
+
+            def __init__(self):
+                self.waits = []
+
+            def info(self, module_id):
+                return {"module_id": module_id}
+
+            def refresh(self, module_id, *, wait_timeout=0):
+                self.waits.append(wait_timeout)
+                return {"state": "ready", "module_id": module_id}
+
+            def invoke(self, module_id, action, payload=None, *, wait_timeout=0):
+                self.waits.append(wait_timeout)
+                return {"state": "ready", "module_id": module_id, "action": action}
+
+        manager = ManagerApp.__new__(ManagerApp)
+        manager.host = FakeHost()
+        manager._background_ui = SimpleNamespace(request=lambda _action: {"visible": False})
+        status = manager._manager_cli_status()
+        self.assertEqual(status["pool"]["state"], "ready")
+        self.assertEqual(status["physical_guard"]["state"], "ready")
+        self.assertEqual(len(manager.host.waits), 8)
+        self.assertTrue(all(0 <= value <= 1.5 for value in manager.host.waits))
 
     def test_module_reload_is_blocked_during_exported_action(self):
         self.host._loaded["test_actions"] = SimpleNamespace(
