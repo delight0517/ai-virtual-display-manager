@@ -550,7 +550,7 @@ class VirtualOutputPoolTests(unittest.TestCase):
         with self.assertRaisesRegex(OutputPoolError, "explicitly authorized"):
             self.pool.heartbeat("only-chat-task")
         self.pool.heartbeat("only-chat-task", confirmed=True)
-        self.now += IDLE_SECONDS - 1
+        self.now += LEASE_STALE_SECONDS - 1
         state = self.pool.reconcile()
         self.assertEqual(state["state"], "active")
         self.assertEqual(state["leases"], 1)
@@ -560,12 +560,13 @@ class VirtualOutputPoolTests(unittest.TestCase):
         self.begin()
         self.pool.heartbeat("job-1", confirmed=True)
         self.now += IDLE_SECONDS + 1
+        self.pool.heartbeat("job-1", confirmed=True)
         state = self.pool.reconcile()
         self.assertEqual(state["state"], "active")
         self.assertEqual(state["leases"], 1)
         self.assertEqual(self.backend.count, 3)
 
-    def test_release_starts_short_idle_countdown_then_restores(self):
+    def test_release_starts_thirty_minute_idle_countdown_then_restores(self):
         self.begin()
         self.pool.heartbeat("job-1", confirmed=True)
         self.now += 120
@@ -584,13 +585,13 @@ class VirtualOutputPoolTests(unittest.TestCase):
     def test_stale_lease_expires_then_idle_outputs_restore_automatically(self):
         self.begin()
         self.pool.heartbeat("job-1", confirmed=True)
-        self.now += LEASE_STALE_SECONDS + 1
+        self.now += IDLE_SECONDS + 1
         state = self.pool.reconcile()
         self.assertEqual(state["state"], "off")
         self.assertEqual(state["leases"], 0)
         self.assertEqual(self.backend.count, 1)
 
-    def test_open_window_keeps_output_alive_and_restarts_short_idle_clock(self):
+    def test_open_window_keeps_output_alive_and_restarts_thirty_minute_idle_clock(self):
         self.begin()
         self.backend.windows = 1
         self.now += IDLE_SECONDS * 2
@@ -682,7 +683,7 @@ class VirtualOutputPoolTests(unittest.TestCase):
         result = pool.refresh()
         self.assertEqual(result["state"], "off")
         self.assertEqual(result["module_id"], "virtual_output_pool")
-        self.assertEqual(result["module_version"], "0.1.15")
+        self.assertEqual(result["module_version"], "0.1.16")
         self.assertEqual(result["max_outputs"], 8)
         self.assertEqual(result["profiles"]["high"], [2560, 1440, 60])
         self.assertFalse(result["backend_configured"])
@@ -851,8 +852,8 @@ class VirtualOutputPoolTests(unittest.TestCase):
         self.assertEqual(self.backend.count, 1)
         self.assertEqual(self.backend.writes, [3, 1])
 
-    def test_idle_grace_is_short_but_task_lease_staleness_matches_contract(self):
-        self.assertEqual(IDLE_SECONDS, 5)
+    def test_idle_grace_is_thirty_minutes_and_task_lease_staleness_matches_contract(self):
+        self.assertEqual(IDLE_SECONDS, 30 * 60)
         self.assertEqual(LEASE_STALE_SECONDS, TASK_LEASE_TTL_SECONDS)
         self.assertEqual(LEASE_STALE_SECONDS, 120)
 

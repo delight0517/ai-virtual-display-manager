@@ -17,10 +17,10 @@ from modules.task_display_lease.authority import MAX_TTL_SECONDS as TASK_LEASE_T
 
 API_VERSION = 1
 MODULE_ID = "virtual_output_pool"
-VERSION = "0.1.15"
-# Keep output cleanup close to the last active task/window. The manager polls
-# pool state every 15 seconds, so this is a short handoff grace, not a timer.
-IDLE_SECONDS = 5
+VERSION = "0.1.16"
+# Restore manager-added outputs only after the project-authorized 30-minute
+# idle period, with no active task lease or visible output window.
+IDLE_SECONDS = 30 * 60
 # The authenticated consumer lease has a separate 120-second TTL. Do not let
 # the short output cleanup grace expire a still-live task lease.
 LEASE_STALE_SECONDS = TASK_LEASE_TTL_SECONDS
