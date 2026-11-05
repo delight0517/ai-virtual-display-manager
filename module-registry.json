@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "appId": "ai-virtual-display-manager",
+  "appVersion": "0.1.98",
+  "apiVersion": 1,
+  "modules": [
+    {
+      "id": "mtt_vdd",
+      "path": "modules/mtt_vdd/module.py",
+      "version": "0.1.7",
+      "apiVersion": 1,
+      "owner": "VDD integration"
+    },
+    {
+      "id": "display_topology",
+      "path": "modules/display_topology/module.py",
+      "version": "0.1.3",
+      "apiVersion": 1,
+      "owner": "Active display-path inventory"
+    },
+    {
+      "id": "app_window_router",
+      "path": "modules/app_window_router/module.py",
+      "version": "0.1.20",
+      "apiVersion": 1,
+      "owner": "Allowlisted AI window restore/placement and opt-in physical-window guard"
+    },
+    {
+      "id": "only_chat_debug_display",
+      "path": "modules/only_chat_debug_display/module.py",
+      "version": "0.1.3",
+      "apiVersion": 1,
+      "owner": "Local named-pipe transport with optional authenticated peer PID delivery; existing v1 status protocol unchanged"
+    },
+    {
+      "id": "only_chat_task_runtime",
+      "path": "modules/only_chat_task_runtime/module.py",
+      "version": "0.1.7",
+      "apiVersion": 1,
+      "owner": "Only Chat task-session IPC v2; records exact-image authenticated client requests; readiness checks require a currently verified compatible output pool"
+    },
+    {
+      "id": "private_desktop",
+      "path": "modules/private_desktop/module.py",
+      "version": "0.1.21",
+      "apiVersion": 1,
+      "owner": "Descriptor-pinned WinSta0 session with host-thread input-desktop checks and bounded capture-stage diagnostics; fail-closed until native isolation proof"
+    },
+    {
+      "id": "task_session_runtime",
+      "path": "modules/task_session_runtime/module.py",
+      "version": "0.1.21",
+      "apiVersion": 1,
+      "owner": "Task lifecycle v2; status reports isolated backend and allowlist; observation preserves bounded capture diagnostics"
+    },
+    {
+      "id": "task_display_lease",
+      "path": "modules/task_display_lease/module.py",
+      "apiVersion": 1,
+      "version": "0.1.1",
+      "owner": "Authenticated Enderman Workbench v2 lease provider; active unmirrored pool output only"
+    },
+    {
+      "id": "only_chat_output_lease",
+      "path": "modules/only_chat_output_lease/module.py",
+      "version": "0.1.0",
+      "apiVersion": 1,
+      "owner": "Only Chat exact-image-authenticated display-output-only lease; requires active manager-created unmirrored output; no app launch/input/capture"
+    },
+    {
+      "id": "virtual_output_pool",
+      "path": "modules/virtual_output_pool/module.py",
+      "version": "0.1.14",
+      "apiVersion": 1,
+      "owner": "Demand-based output pool; zero-baseline sessions, bounded stable endpoint discovery, persisted failure reason codes, and verified cleanup of owned outputs"
+    },
+    {
+      "id": "single_output_control",
+      "path": "modules/single_output_control/module.py",
+      "version": "0.1.0",
+      "apiVersion": 1,
+      "owner": "Explicit DISPLAY10-only single MTT output control, separate from task pool"
+    },
+    {
+      "id": "display_diagnostics",
+      "path": "modules/display_diagnostics/module.py",
+      "version": "0.1.1",
+      "apiVersion": 1,
+      "owner": "Bounded privacy-preserving window/display recovery diagnostics"
+    },
+    {
+      "id": "manager_cli",
+      "path": "modules/manager_cli/module.py",
+      "version": "0.1.19",
+      "apiVersion": 1,
+      "owner": "Authenticated local AI operator CLI; screen/window observability and typed, confirmed manager actions"
+    },
+    {
+      "id": "stardesk_management",
+      "path": "modules/stardesk_management/module.py",
+      "version": "0.1.7",
+      "apiVersion": 1,
+      "owner": "On-demand read-only StarDesk process, transport-count, PnP adapter-presence and verified active-output attachment observer; inbound session/input fail closed as unknown"
+    }
+  ]
+}

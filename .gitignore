@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv*/
+build/
+dist/
+dist-candidate*/
+work/
+*.log
+self-check-report.json
+
+build-ci/
+build-cli-ci/
+dist-ci/
+build-cli/
+dist-cli/
