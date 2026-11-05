@@ -39,7 +39,7 @@ The hidden self-check reads local device/display metadata and exercises an ephem
 
 ## Release boundary
 
-This source candidate has not been installed or published. No project license has been chosen yet. Do not redistribute it until the owner adds the selected project license and reviews all upstream terms in `THIRD_PARTY_NOTICES.md`. The external MTT VDD driver is not bundled; obtain and install it separately from its upstream project.
+This is a public pre-release source repository; no binary release has been published, and this candidate has not been installed on the development host. VDM source is licensed under MIT in `LICENSE`. Bundled third-party components retain their own terms in `THIRD_PARTY_NOTICES.md`. The external MTT VDD driver is not bundled; obtain and install it separately from its upstream project.
 
 
 

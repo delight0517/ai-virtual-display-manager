@@ -4,7 +4,7 @@ AI Virtual Display Manager (VDM) is a Windows utility for inspecting display sta
 
 ## Current project status
 
-This source tree is a local public-release preparation candidate. It is **not a stable release**: the most recent code has passed 551 source tests and a bundled hidden self-check, but the new Router private-QA target has not been installed or run in a live isolated session. The installed runtime is older than this candidate. Hardware and driver combinations beyond the development machine have not been verified.
+This repository is a public, pre-release source candidate at https://github.com/delight0517/ai-virtual-display-manager. It is **not a stable release**: the most recent code has passed 551 source tests and a bundled hidden self-check, but the new Router private-QA target has not been installed or run in a live isolated session. The installed runtime is older than this candidate. Hardware and driver combinations beyond the development machine have not been verified.
 
 The build candidate is VDM 0.1.98 with `manager_cli` 0.1.19. This project currently targets Windows only. Review [COMPATIBILITY.md](COMPATIBILITY.md) for the exact tested environment and known gaps. Third-party component terms for redistributed build outputs are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). VDM is released under the MIT License. See [LICENSE](LICENSE). Bundled third-party components retain their own terms, listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
