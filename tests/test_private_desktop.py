@@ -460,6 +460,16 @@ class PrivateDesktopModuleTests(unittest.TestCase):
         self.assertIs(cleanup["desktop_removed"], True)
         api.desktop_exists.assert_called_once_with("AIVDDQA_test")
 
+    def test_cleanup_removal_readback_retries_until_delayed_desktop_disappears(self):
+        cleanup = {"desktop_handle_closed": True}
+        report = {}
+        api = Mock()
+        api.desktop_exists.side_effect = [True, True, False]
+        with patch("modules.private_desktop.module.time.sleep"):
+            _verify_desktop_removal(cleanup, api, "AIVDDQA_test", report)
+        self.assertIs(cleanup["desktop_removed"], True)
+        self.assertEqual(api.desktop_exists.call_count, 3)
+
     def test_resources_not_created_before_input_desktop_denial_are_vacuously_closed(self):
         cleanup = {"process_stopped": False, "uia_worker_stopped": False,
                    "job_handle_closed": False, "desktop_handle_closed": False}

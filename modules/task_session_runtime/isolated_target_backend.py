@@ -369,8 +369,15 @@ class DescriptorPrivateDesktopBackend:
             return receipt_type(False, False, False, False, False, False,
                                 profile_data_removed=False)
         receipt = self._stop_receipt(raw)
-        if not receipt.verified:
-            return receipt
+        if not all(value is True for value in (
+                receipt.stopped, receipt.target_stopped, receipt.job_closed,
+                receipt.desktop_removed, receipt.input_desktop_unchanged,
+                receipt.output_lease_released)):
+            return receipt_type(
+                receipt.stopped, receipt.target_stopped, receipt.job_closed,
+                receipt.desktop_removed, receipt.input_desktop_unchanged,
+                output_lease_released=receipt.output_lease_released,
+                profile_data_removed=False)
         removed = self._remove_profile(binding.profile_dir)
         return receipt_type(
             receipt.stopped, receipt.target_stopped, receipt.job_closed,

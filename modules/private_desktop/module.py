@@ -705,10 +705,20 @@ def _verify_desktop_removal(cleanup: dict, api, desktop_name: str, result: dict)
     cleanup["desktop_removed"] = False
     if cleanup.get("desktop_handle_closed") is not True:
         return
-    try:
-        cleanup["desktop_removed"] = not api.desktop_exists(desktop_name)
-    except Exception as exc:
-        result["cleanup_error"] = f"desktop list readback: {type(exc).__name__}: {exc}"[:180]
+    deadline = time.monotonic() + 2.0
+    last_error = None
+    while True:
+        try:
+            if not api.desktop_exists(desktop_name):
+                cleanup["desktop_removed"] = True
+                return
+        except Exception as exc:
+            last_error = exc
+        if time.monotonic() >= deadline:
+            break
+        time.sleep(0.05)
+    if last_error is not None:
+        result["cleanup_error"] = f"desktop list readback: {type(last_error).__name__}: {last_error}"[:180]
 
 
 def _mark_uncreated_probe_resources(cleanup: dict, process, uia_process,

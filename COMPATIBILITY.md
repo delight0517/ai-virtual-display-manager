@@ -7,15 +7,15 @@ This document describes observed verification, not a promise that every PC or AI
 - Windows 11, build 26300
 - Python 3.13.13, run from a Windows virtual environment
 - PyInstaller 6.22.3
-- The public-candidate Windows CI uses the complete dependency set recorded in `requirements-build-lock.txt`; candidate 0.1.102 passed CI, and [candidate 0.1.103 Windows CI passed](https://github.com/delight0517/ai-virtual-display-manager/actions/runs/42059008002).
-- VDM source candidate 0.1.103; `manager_cli` 0.1.21
-- Source suite: 561 tests passed
-- Windows app and CLI: built from this staged source tree; hidden app self-check and CLI help returned exit code 0
+- The public-candidate Windows CI uses the complete dependency set recorded in `requirements-build-lock.txt`; candidate 0.1.103 passed CI in [GitHub Actions](https://github.com/delight0517/ai-virtual-display-manager/actions/runs/42059008002).
+- VDM source candidate 0.1.104; `manager_cli` 0.1.21
+- Source suite: 562 tests passed on the development host
+- Windows app and CLI: candidate 0.1.104 built locally; CLI help and hidden app self-check returned exit code 0
 - The self-check read host display metadata. It did not start an AI target, capture pixels, or change display topology.
 
 ## Integration status
 
-The staged candidate was not installed. Live isolated sessions for the Only Chat and Router task targets have not been verified against matching application identities. The candidate has not been used to start a task, change display topology, or capture pixels. These target integrations remain unverified, so passing the source suite and hidden self-check do not establish live-operation reliability.
+Candidate 0.1.103 recovered the active virtual-output pool after verified endpoint renumbering. Candidate 0.1.104 is now installed on the development host; its Router QA target rendered on a fresh VDM private desktop with zero virtual outputs, and stop verified desktop removal, input-desktop preservation, and temp-profile removal. No account or provider operation was performed. These checks do not verify Only Chat integration, virtual-monitor window placement, other PCs or drivers, or stable-release reliability.
 
 ## Support limits
 

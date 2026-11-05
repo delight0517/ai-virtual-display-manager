@@ -340,6 +340,7 @@ class DescriptorPrivateDesktopBackendTests(unittest.TestCase):
         backend, _ = self.make_backend(session)
         receipt = backend.stop(self.start(backend), timeout_seconds=5)
         self.assertFalse(receipt.verified)
+        self.assertFalse(receipt.profile_data_removed)
 
     def test_action_descriptor_is_passed_as_manager_owned_immutable_policy(self):
         session = self.make_session()

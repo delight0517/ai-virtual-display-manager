@@ -631,11 +631,21 @@ class DiagnosticSession:
             removal = {"desktop_handle_closed": desktop_closed, "desktop_removed": False}
             removal_report: dict = {}
             if desktop_closed:
-                try:
-                    removal["desktop_removed"] = not api.desktop_exists(self.desktop_name)
-                except Exception as exc:
+                deadline = time.monotonic() + 2.0
+                last_error = None
+                while True:
+                    try:
+                        if not api.desktop_exists(self.desktop_name):
+                            removal["desktop_removed"] = True
+                            break
+                    except Exception as exc:
+                        last_error = exc
+                    if time.monotonic() >= deadline:
+                        break
+                    time.sleep(0.05)
+                if last_error is not None:
                     removal_report["cleanup_error"] = (
-                        f"desktop list readback: {type(exc).__name__}: {exc}"[:180])
+                        f"desktop list readback: {type(last_error).__name__}: {last_error}"[:180])
             try:
                 input_after = _read_input_desktop_name(api, self._host_thread_id)
             except Exception:
