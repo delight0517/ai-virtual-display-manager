@@ -1788,7 +1788,7 @@ def main():
                 return
         except Exception as exc:
             atomic_json(controller.path.with_name("startup-error.json"),
-                        {"error": f"{type(exc).__name__}: {exc}", "at": time.time()})
+                        {"error": type(exc).__name__, "at": time.time()})
             return
     guard = SingleInstanceGuard.acquire()
     if guard is None:
@@ -1821,7 +1821,7 @@ def main():
             else:
                 atomic_json(Path(os.environ["LOCALAPPDATA"]) / "AI Virtual Display Manager"
                             / "startup-error.json",
-                            {"error": f"{type(exc).__name__}: {exc}", "at": time.time()})
+                            {"error": type(exc).__name__, "at": time.time()})
         except Exception:
             # A partially initialized Tk app may already have destroyed its
             # interpreter; reporting failure must not create a second fatal error.

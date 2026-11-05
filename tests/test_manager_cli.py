@@ -457,12 +457,36 @@ class ManagerCliTests(unittest.TestCase):
     def test_startup_log_exposes_error_type_but_not_message_or_path(self):
         path = self.module._log_path.parent / f"startup-{uuid.uuid4().hex}.json"
         try:
-            path.write_text(json.dumps({"error": "TimeoutError", "at": 1_700_000_000,
-                                        "message": "C:/private/token=secret"}), encoding="utf-8")
+            path.write_text(json.dumps({
+                "error": "TimeoutError: C:/private/token=secret private exception text",
+                "at": 1_700_000_000,
+                "message": "C:/private/token=secret",
+            }), encoding="utf-8")
             report = self.module._startup_log(path)
             self.assertEqual(report, {"state": "ready", "present": True,
                                       "error_type": "TimeoutError", "timestamp": 1_700_000_000})
             self.assertNotIn("secret", json.dumps(report))
+        finally:
+            path.unlink(missing_ok=True)
+
+    def test_startup_log_accepts_new_bare_error_type(self):
+        path = self.module._log_path.parent / f"startup-{uuid.uuid4().hex}.json"
+        try:
+            path.write_text(json.dumps({"error": "TimeoutError", "at": 1_700_000_000}),
+                            encoding="utf-8")
+            report = self.module._startup_log(path)
+            self.assertEqual(report, {"state": "ready", "present": True,
+                                      "error_type": "TimeoutError", "timestamp": 1_700_000_000})
+        finally:
+            path.unlink(missing_ok=True)
+
+    def test_startup_log_rejects_untyped_text(self):
+        path = self.module._log_path.parent / f"startup-{uuid.uuid4().hex}.json"
+        try:
+            path.write_text(json.dumps({"error": "private text without type", "at": 1_700_000_000}),
+                            encoding="utf-8")
+            self.assertEqual(self.module._startup_log(path), {
+                "state": "unavailable", "error_code": "STARTUP_LOG_INVALID"})
         finally:
             path.unlink(missing_ok=True)
 

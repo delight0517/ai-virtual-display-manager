@@ -100,7 +100,8 @@ class BackgroundUITests(unittest.TestCase):
                 patch("app.messagebox.showerror") as dialog:
             main()
         dialog.assert_not_called()
-        self.assertIn("fixture failure", record.call_args.args[1]["error"])
+        self.assertEqual(record.call_args.args[1]["error"], "RuntimeError")
+        self.assertNotIn("fixture failure", str(record.call_args.args[1]))
 
     def test_cli_ui_commands_are_fixed_and_require_no_arguments(self):
         module = ManagerCliModule.__new__(ManagerCliModule)

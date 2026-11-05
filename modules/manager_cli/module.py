@@ -24,7 +24,7 @@ from core.runtime_packet import MAX_PACKET_BYTES
 
 API_VERSION = 1
 MODULE_ID = "manager_cli"
-VERSION = "0.1.20"
+VERSION = "0.1.21"
 SAFE_RUNTIME_ERROR_CODES = frozenset({"PHYSICAL_PRIMARY_UNVERIFIED"})
 ACTIONS = ("status",)
 PIPE_PATH = r"\\.\pipe\AIVDM_ManagerControl.v1"
@@ -584,10 +584,16 @@ class ManagerCliModule:
             return {"state": "unavailable", "error_code": "STARTUP_LOG_INVALID"}
         error = record.get("error")
         at = record.get("at")
-        if (not isinstance(error, str) or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,63}", error)
+        if not isinstance(error, str) or len(error) > 4096:
+            return {"state": "unavailable", "error_code": "STARTUP_LOG_INVALID"}
+        # Older VDM builds persisted "Type: message". Accept that format for
+        # compatibility, but return only the validated exception class name.
+        error_type = error.split(":", 1)[0] if ":" in error else error
+        if (not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,63}", error_type)
                 or type(at) not in (int, float) or not 0 <= at <= 9_999_999_999):
             return {"state": "unavailable", "error_code": "STARTUP_LOG_INVALID"}
-        return {"state": "ready", "present": True, "error_type": error, "timestamp": at}
+        return {"state": "ready", "present": True,
+                "error_type": error_type, "timestamp": at}
 
     @staticmethod
     def _validated_topology(topology):
