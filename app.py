@@ -34,6 +34,9 @@ from modules.virtual_output_pool.state_store import VirtualOutputStateStore
 
 
 MANAGER_STATUS_WAIT_SECONDS = 1.5
+PRIVATE_DESKTOP_FRAME_WAIT_SECONDS = 1.5
+PRIVATE_DESKTOP_FRAME_POLL_SECONDS = 0.05
+PRIVATE_DESKTOP_FRAME_MAX_ATTEMPTS = 32
 
 
 def _manager_status_error_code(exc):
@@ -1961,6 +1964,52 @@ def run_private_desktop_probe_self_check(report_path: str) -> int:
     return exit_code
 
 
+def _observe_private_desktop_session_frame(host, session_id: str, *,
+                                            different_from_sha256: str | None = None):
+    """Wait briefly for a valid frame, or for a changed frame after the test action."""
+    deadline = time.monotonic() + PRIVATE_DESKTOP_FRAME_WAIT_SECONDS
+    last_observation = None
+    last_png = None
+    attempts = 0
+    while attempts < PRIVATE_DESKTOP_FRAME_MAX_ATTEMPTS:
+        attempts += 1
+        observed = host.invoke("private_desktop", "observe_session",
+                               {"session_id": session_id})
+        if not isinstance(observed, dict):
+            return {"error_code": "capture_response_invalid"}, None, attempts
+
+        encoded_png = observed.pop("png_bytes", None)
+        if isinstance(encoded_png, str) and encoded_png:
+            try:
+                png = base64.b64decode(encoded_png, validate=True)
+            except (ValueError, base64.binascii.Error):
+                png = None
+            if (png and png.startswith(PNG_SIGNATURE)
+                    and len(png) <= MAX_PNG_BYTES):
+                digest = hashlib.sha256(png).hexdigest()
+                if different_from_sha256 is None or digest != different_from_sha256:
+                    return observed, png, attempts
+                last_observation, last_png = observed, png
+                observed["error_code"] = "capture_content_invalid"
+            else:
+                observed["error_code"] = "capture_content_invalid"
+
+        error_code = observed.get("error_code")
+        if error_code != "capture_content_invalid":
+            return observed, None, attempts
+
+        now = time.monotonic()
+        if now >= deadline or attempts >= PRIVATE_DESKTOP_FRAME_MAX_ATTEMPTS:
+            if last_observation is not None and different_from_sha256 is None:
+                return last_observation, last_png, attempts
+            return observed, None, attempts
+        time.sleep(min(PRIVATE_DESKTOP_FRAME_POLL_SECONDS, deadline - now))
+
+    if last_observation is not None and different_from_sha256 is None:
+        return last_observation, last_png, attempts
+    return {"error_code": "capture_content_invalid"}, None, attempts
+
+
 def run_private_desktop_session_self_check(report_path: str) -> int:
     """Exercise start/observe/invoke/observe/stop on the owned test window."""
     report = {"app_version": APP_VERSION, "session": {"passed": False}}
@@ -2011,12 +2060,21 @@ def run_private_desktop_session_self_check(report_path: str) -> int:
             broker_state.get("lease_acquisition") == "fail_closed"
             and broker_state.get("display_enabled") is False)
         report["session"]["guards"] = guards
-        before = host.invoke("private_desktop", "observe_session", {"session_id": session_id})
-        before_png = base64.b64decode(before.pop("png_bytes"), validate=True)
+        before, before_png, before_attempts = _observe_private_desktop_session_frame(
+            host, session_id)
+        report["session"]["observe_before_capture_attempts"] = before_attempts
+        if before_png is None:
+            report["session"]["observe_before"] = {
+                **before, "capture_ready": False,
+                "capture_attempts": before_attempts,
+            }
+            raise RuntimeError("PRIVATE_DESKTOP_INITIAL_FRAME_UNAVAILABLE")
+        before_digest = hashlib.sha256(before_png).hexdigest()
         report["session"]["observe_before"] = {
             **before, "png_signature_valid": before_png.startswith(PNG_SIGNATURE),
             "png_size_bounded": len(before_png) <= MAX_PNG_BYTES,
-            "png_hash_matches": hashlib.sha256(before_png).hexdigest() == before.get("png_sha256"),
+            "png_hash_matches": before_digest == before.get("png_sha256"),
+            "capture_attempts": before_attempts,
         }
         action = host.invoke("private_desktop", "invoke_diagnostic_button", {"session_id": session_id})
         report["session"]["invoke"] = {key: action.get(key) for key in (
@@ -2025,13 +2083,22 @@ def run_private_desktop_session_self_check(report_path: str) -> int:
             "input_desktop_unchanged")}
         if action.get("error"):
             report["session"]["invoke"]["error"] = action.get("error")
-        after = host.invoke("private_desktop", "observe_session", {"session_id": session_id})
-        after_png = base64.b64decode(after.pop("png_bytes"), validate=True)
+        after, after_png, after_attempts = _observe_private_desktop_session_frame(
+            host, session_id, different_from_sha256=before_digest)
+        report["session"]["observe_after_capture_attempts"] = after_attempts
+        if after_png is None:
+            report["session"]["observe_after"] = {
+                **after, "capture_ready": False,
+                "capture_attempts": after_attempts,
+            }
+            raise RuntimeError("PRIVATE_DESKTOP_ACTION_FRAME_UNAVAILABLE")
+        after_digest = hashlib.sha256(after_png).hexdigest()
         report["session"]["observe_after"] = {
             **after, "png_signature_valid": after_png.startswith(PNG_SIGNATURE),
             "png_size_bounded": len(after_png) <= MAX_PNG_BYTES,
-            "png_hash_matches": hashlib.sha256(after_png).hexdigest() == after.get("png_sha256"),
-            "frame_changed_after_action": before.get("png_sha256") != after.get("png_sha256"),
+            "png_hash_matches": after_digest == after.get("png_sha256"),
+            "frame_changed_after_action": before_digest != after_digest,
+            "capture_attempts": after_attempts,
         }
         stopped = host.invoke("private_desktop", "stop_session", {"session_id": session_id})
         report["session"]["stop"] = stopped
