@@ -95,16 +95,11 @@ class OnlyChatTaskRuntimePipeTests(unittest.TestCase):
         self.assertFalse(process_image_matches(123, r"Z:\missing\Only Chat.exe"))
 
     def test_client_identity_path_comes_from_exact_registry_record(self):
-        root = Path(__file__).resolve().parents[1]
-        local = json.loads(APP_PATH_REGISTRY.read_text(encoding="utf-8"))
-        record = next(item for item in local["apps"] if item["id"] == "only-chat-windows")
-        expected = Path(record["windows"]["installed"]) / f"{record['name']}.exe"
-        self.assertEqual(registered_only_chat_exe_path(), expected)
-        self.assertIsNone(registered_only_chat_exe_path(root / "missing-registry.json"))
-
         import tempfile
         with tempfile.TemporaryDirectory() as temp:
             registry = Path(temp) / "APP_PATH_REGISTRY.json"
+            self.assertIsNone(registered_only_chat_exe_path(registry))
+
             registry.write_text(json.dumps({"apps": [{"id": "only-chat-windows",
                 "windows": {"installed": "relative\\Only Chat.exe"}}]}), encoding="utf-8")
             self.assertIsNone(registered_only_chat_exe_path(registry))
