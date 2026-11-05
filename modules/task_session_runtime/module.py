@@ -20,7 +20,7 @@ from modules.virtual_output_pool.module import MAX_OUTPUTS, PROFILES
 
 API_VERSION = 1
 MODULE_ID = "task_session_runtime"
-VERSION = "0.1.21"
+VERSION = "0.1.22"
 ACTIONS = ("status", "start", "observe", "act", "interrupt", "heartbeat", "cancel", "stop")
 CONCURRENT_ACTIONS = ("status", "interrupt", "cancel", "stop")
 PROTOCOL_VERSION = 2
@@ -152,9 +152,7 @@ def verify_target_executable_identity(descriptor: TargetLaunchDescriptor) -> dic
     try:
         path = Path(descriptor.executable_path)
         resolved = path.resolve(strict=True)
-        if (not resolved.is_file()
-                or os.path.normcase(os.path.abspath(str(path)))
-                != os.path.normcase(os.path.abspath(str(resolved)))):
+        if (not resolved.is_file() or not path.samefile(resolved)):
             return {"verified": False, "error_code": "TARGET_IMAGE_PATH_CHANGED"}
         digest = hashlib.sha256()
         with resolved.open("rb") as stream:

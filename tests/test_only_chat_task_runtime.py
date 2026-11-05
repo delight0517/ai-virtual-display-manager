@@ -154,8 +154,8 @@ class OnlyChatTaskRuntimePipeTests(unittest.TestCase):
     @unittest.skipUnless(sys.platform == "win32", "requires Windows process image query")
     def test_non_only_chat_process_cannot_authenticate_as_pipe_client(self):
         import os
-        expected = registered_only_chat_exe_path()
-        self.assertIsNotNone(expected)
+        # The test must not depend on a developer's separately installed Only Chat app.
+        expected = Path(__file__).resolve()
         self.assertTrue(expected.is_file())
         self.assertFalse(process_image_matches(os.getpid(), expected))
 

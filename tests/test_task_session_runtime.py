@@ -1235,7 +1235,7 @@ class TaskSessionRuntimeTests(unittest.TestCase):
         try:
             info = host.load("task_session_runtime")
             state = host.refresh("task_session_runtime")
-            self.assertEqual(info["version"], "0.1.21")
+            self.assertEqual(info["version"], "0.1.22")
             self.assertFalse(state["backend_available"])
             self.assertEqual(state["target_count"], 0)
             self.assertEqual(state["lease_acquisition"], "fail_closed")

@@ -49,7 +49,7 @@
     {
       "id": "task_session_runtime",
       "path": "modules/task_session_runtime/module.py",
-      "version": "0.1.21",
+      "version": "0.1.22",
       "apiVersion": 1,
       "owner": "Task lifecycle v2; status reports isolated backend and allowlist; observation preserves bounded capture diagnostics"
     },

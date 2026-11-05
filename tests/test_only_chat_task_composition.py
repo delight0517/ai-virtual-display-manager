@@ -176,7 +176,7 @@ class OnlyChatTaskCompositionTests(unittest.TestCase):
             runtime.dispose()
 
     def test_canonical_task_runtime_module_version_is_registered(self):
-        self.assertEqual(self.info["version"], "0.1.21")
+        self.assertEqual(self.info["version"], "0.1.22")
 
 
 if __name__ == "__main__":
